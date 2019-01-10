@@ -1,31 +1,29 @@
 <template>
-  <div class="chat-app">
-    
-    <ContactsList :contacts="contacts" @selected="startConversationWith"/>
-    <Conversation :contact="selectedContact" :messages="messages" @new="saveNewMessage"/>
-  </div>
+    <div class="chat-app">
+        
+        <ContactsList :contacts="contacts" @selected="startConversationWith"/>
+        <Conversation :contact="selectedContact" :messages="messages" @new="saveNewMessage"/>
+    </div>
 </template>
 
 <script>
     import Conversation from './Conversation';
     import ContactsList from './ContactsList';
+
     export default {
-
-
-        props:{
+        props: {
             user: {
                 type: Object,
-                required : true
+                required: true
             }
         },
-        data(){
-        return {
-        selectedContact:null,
-        messages: [],
-        contacts: []
-        }
+        data() {
+            return {
+                selectedContact: null,
+                messages: [],
+                contacts: []
+            };
         },
-
         mounted() {
             Echo.private(`messages.${this.user.id}`)
                 .listen('NewMessage', (e) => {
@@ -33,41 +31,53 @@
                 });
 
             axios.get('/contacts')
-            .then((response) => {
-                console.log(response.data);
-                this.contacts = response.data
-            })
+                .then((response) => {
+                    this.contacts = response.data;
+                });
         },
         methods: {
-        
-            startConversationWith(contact){
+            startConversationWith(contact) {
+                this.updateUnreadCount(contact, true);
+
                 axios.get(`/conversation/${contact.id}`)
-                .then((response) =>{
-                    this.messages = response.data;
-                    this.selectedContact = contact;
-
-                }
-                     
-                )
+                    .then((response) => {
+                        this.messages = response.data;
+                        this.selectedContact = contact;
+                    })
             },
-            saveNewMessage(text){
-
-                this.messages.push(text);
-
+            saveNewMessage(message) {
+                this.messages.push(message);
             },
-             hanleIncoming(message) {
+            hanleIncoming(message) {
                 if (this.selectedContact && message.from == this.selectedContact.id) {
                     this.saveNewMessage(message);
                     return;
                 }
-                alert(message.text);
+
+                this.updateUnreadCount(message.from_contact, false);
+            },
+            updateUnreadCount(contact, reset) {
+                this.contacts = this.contacts.map((single) => {
+                    if (single.id !== contact.id) {
+                        return single;
+                    }
+
+                    if (reset)
+                        single.unread = 0;
+                    else
+                        single.unread += 1;
+
+                    return single;
+                })
             }
         },
-        components: {Conversation,ContactsList}
+        components: {Conversation, ContactsList}
     }
 </script>
+
+
 <style lang="scss" scoped>
-.chat-app{
+.chat-app {
     display: flex;
 }
 </style>
