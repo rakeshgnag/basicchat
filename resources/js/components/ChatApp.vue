@@ -1,14 +1,16 @@
 <template>
   <div class="chat-app">
+    
+    <ContactsList :contacts="contacts" @selected="startConversationWith"/>
     <Conversation :contact="selectedContact" :messages="messages"/>
-    <Contactlist :contacts="contacts"/>
   </div>
 </template>
 
 <script>
     import Conversation from './Conversation';
-    import Contactlist from './Contactlist';
+    import ContactsList from './ContactsList';
     export default {
+
 
         props:{
             user: {
@@ -23,14 +25,32 @@
         contacts: []
         }
         },
+
         mounted() {
-            console.log(this.user);
             axios.get('/contacts')
             .then((response) => {
                 console.log(response.data);
                 this.contacts = response.data
             })
         },
-        components: {Conversation,Contactlist}
+        methods: {
+        
+            startConversationWith(contact){
+                axios.get(`/conversation/${contact.id}`)
+                .then((response) =>{
+                    this.messages = response.data;
+                    this.selectedContact = contact;
+
+                }
+                     
+                )
+            }
+        },
+        components: {Conversation,ContactsList}
     }
 </script>
+<style lang="scss" scoped>
+.chat-app{
+    display: flex;
+}
+</style>
